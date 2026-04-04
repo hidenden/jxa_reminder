@@ -1,0 +1,63 @@
+#!/usr/bin/osascript -l JavaScript
+
+// リマインダーアプリをインスタンス化
+const app = Application('Reminders');
+app.includeStandardAdditions = true;
+
+// 対象とするリスト名（ユーザーのスクリーンショットに合わせました）
+const LIST_NAME = "定期的な家事";
+
+// 1. データの定義（辞書 / Object）
+const tasksToManage = {
+    "台所の排水口の掃除": 23,
+    "トイレ掃除": 3,
+    "洗面台の排水口の掃除": 19,
+    "風呂掃除": 14,
+    "掃除機で掃除": 3
+};
+
+function run() {
+    // 指定した名前のリストを取得
+    const targetList = app.lists.byName(LIST_NAME);
+    if (!targetList.exists()) {
+        console.log(`リスト "${LIST_NAME}" が見つかりません。`);
+        return;
+    }
+
+    const now = new Date();
+
+    // 2. 各項目のループ処理
+    for (const [title, days] of Object.entries(tasksToManage)) {
+        
+        // 3. 既存の項目を検索（フィルタリング）
+        // titleが一致し、かつ未完了のものを抽出
+        const existingReminders = targetList.reminders.where({
+            name: title,
+            completed: false
+        })();
+
+        // 4. 存在しない場合のみ登録
+        if (existingReminders.length === 0) {
+            
+            // 期限の計算（現在時刻 + N日）
+            let dueDate = new Date(now.getTime());
+            dueDate.setDate(dueDate.getDate() + days);
+
+            // 5. 新規リマインダーのオブジェクト作成とプッシュ
+            const newReminder = app.Reminder({
+                name: title,
+                dueDate: dueDate
+            });
+            
+            targetList.reminders.push(newReminder);
+            
+            console.log(`追加成功: ${title} (期限: ${dueDate.toLocaleString()})`);
+        } else {
+            console.log(`スキップ: ${title} は既に存在します。`);
+        }
+    }
+}
+
+// 実行
+run();
+

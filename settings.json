@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "*.jxa": "javascript"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"  // 任意でPrettier導入時
+  }
+}
