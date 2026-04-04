@@ -33,6 +33,7 @@ function loadStockItems() {
 const LIST_NAME = "定期的な家事";
 
 // 1. データの定義（辞書 / Object）
+/*
 const tasksToManage = {
     "台所の排水口の掃除": 23,
     "トイレ掃除": 3,
@@ -40,6 +41,7 @@ const tasksToManage = {
     "風呂掃除": 14,
     "掃除機で掃除": 3
 };
+*/
 
 function run() {
 
@@ -55,7 +57,7 @@ function run() {
     const now = new Date();
 
     // 2. 各項目のループ処理
-    for (const [title, days] of Object.entries(tasksToManage)) {
+    for (const [title, days] of Object.entries(stockItems)) {
         
         // 3. 既存の項目を検索（フィルタリング）
         // titleが一致し、かつ未完了のものを抽出
@@ -85,7 +87,3 @@ function run() {
         }
     }
 }
-
-// 実行
-run();
-
