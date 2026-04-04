@@ -11,13 +11,20 @@ function loadStockItems() {
         console.log(`リスト "${STOCK_LIST_NAME}" が見つかりません。`);
         return [];
     }
-    //console.log(`リスト "${STOCK_LIST_NAME}" を見つけました。アイテムを読み込みます...`);
+    console.log(`リスト "${STOCK_LIST_NAME}" を見つけました。アイテムを読み込みます...`);
     // リスト内の全てのリマインダーを取得
-    const stockItems = stockList.reminders.where({ completed: false})();
+    const stockItems = stockList.reminders.where({ completed: false});
+    const names = stockItems.name();
+    const bodies = stockItems.body();
+    console.log(`取得したアイテムの名前: ${names}`);
+    console.log(`取得したアイテムの期限情報: ${bodies}`);
     // 空の辞書を作成
     const stockDict = {};
-    console.log(`取得したストックアイテム数: ${stockItems.length}`);
-
+    for (let i = 0; i < names.length; i++) {
+        // bodies[i]を数値に変換して保存
+        const days = parseInt(bodies[i], 10);
+        stockDict[names[i]] = days;
+    }
     return stockDict;
 }
 
