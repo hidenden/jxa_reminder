@@ -1,86 +1,59 @@
-# jxa_reminder launchd 運用手順
+# jxa_reminder deploy 手順
 
-このドキュメントは、`ReCreateReminderItems2.jxa` を 1 時間に 1 回 `launchd` で実行するための設定手順です。
+このリポジトリは、開発用 JXA と実行用 JXA を分離して運用します。
+`make deploy` を実行すると、次を自動で行います。
+
+1. 実行用 JXA を実行環境ディレクトリへコピー
+2. 環境依存パスを埋め込んだ plist を生成
+3. `~/Library/LaunchAgents` へ配置
+4. `plutil` で構文検証
+5. `launchctl` で再ロード
+6. `kickstart` して状態を表示
 
 ## 前提
 
-- 対象スクリプト: `/Users/hide/Documents/Development/jxa_reminder/ReCreateReminderItems2.jxa`
-- plist ファイル: `/Users/hide/Documents/Development/jxa_reminder/com.hide.jxa-reminder.plist`
-- 実行ユーザー: ログイン中のユーザー（LaunchAgent）
+- 対象スクリプト: `ReCreateReminderItems2.jxa`
+- plist テンプレート: `com.hide.jxa-reminder.plist.template`
+- 実行用 JXA 配置先: `~/Library/Application Support/jxa-reminder/`
+- LaunchAgent ラベル: `com.hide.jxa-reminder`
 
-## 1. plist を配置する
-
-```bash
-mkdir -p ~/Library/LaunchAgents
-cp /Users/hide/Documents/Development/jxa_reminder/com.hide.jxa-reminder.plist ~/Library/LaunchAgents/
-```
-
-## 2. plist の構文を確認する
+## デプロイ
 
 ```bash
-plutil -lint ~/Library/LaunchAgents/com.hide.jxa-reminder.plist
+make deploy
 ```
 
-`OK` と表示されれば問題ありません。
+### 主な生成・配置先
 
-## 3. LaunchAgent を有効化する
+- 生成 plist: `.build/com.hide.jxa-reminder.plist`
+- 配置 plist: `~/Library/LaunchAgents/com.hide.jxa-reminder.plist`
+- 実行スクリプト: `~/Library/Application Support/jxa-reminder/ReCreateReminderItems2.jxa`
+
+## 状態確認
 
 ```bash
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.hide.jxa-reminder.plist
+make status
 ```
 
-すでに同じラベルがロード済みでエラーになる場合は、いったん解除してから再実行します。
+## 停止・撤去
 
 ```bash
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.hide.jxa-reminder.plist
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.hide.jxa-reminder.plist
+make undeploy
 ```
 
-## 4. 即時実行して動作確認する
-
-```bash
-launchctl kickstart -k gui/$(id -u)/com.hide.jxa-reminder
-```
-
-## 5. 状態確認
-
-```bash
-launchctl print gui/$(id -u)/com.hide.jxa-reminder
-```
-
-`state = running` や `last exit code = 0` を確認します。
-
-## 6. ログ確認
-
-plist では次のログに出力されます。
+## ログ確認
 
 - 標準出力: `/tmp/jxa-reminder.out.log`
 - 標準エラー: `/tmp/jxa-reminder.err.log`
-
-確認コマンド:
 
 ```bash
 tail -n 100 /tmp/jxa-reminder.out.log
 tail -n 100 /tmp/jxa-reminder.err.log
 ```
 
-## 7. 停止・無効化
+## 注意事項
 
-```bash
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.hide.jxa-reminder.plist
-```
-
-## 8. 設定変更後の反映
-
-plist を編集したら、次の順で反映します。
-
-```bash
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.hide.jxa-reminder.plist
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.hide.jxa-reminder.plist
-```
-
-## 補足
-
-- `StartInterval` は実行間隔（秒）です。現在の設定では `3600` 秒（1時間）です。
+- 初回実行時に Reminders へのアクセス許可ダイアログが出る場合があります。
+- `StartInterval` は 3600 秒（1時間）です。
 - スリープ中は予定時刻どおりに実行されないことがあります。
-- リマインダーへのアクセス権限ダイアログが出る場合は許可してください。
+- `ItemStock` リストが存在しない場合、スクリプトは処理対象なしで終了します。

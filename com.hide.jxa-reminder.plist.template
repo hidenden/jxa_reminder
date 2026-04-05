@@ -10,7 +10,7 @@
         <string>/usr/bin/osascript</string>
         <string>-l</string>
         <string>JavaScript</string>
-        <string>/Users/hide/Documents/Development/jxa_reminder/ReCreateReminderItems2.jxa</string>
+        <string>__JXA_SCRIPT_PATH__</string>
     </array>
 
     <key>StartInterval</key>
