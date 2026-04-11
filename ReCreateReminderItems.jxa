@@ -17,6 +17,8 @@ const tasksToManage = {
 };
 
 function run() {
+    console.log(`起動: ${new Date().toLocaleString()}`);
+
     // 指定した名前のリストを取得
     const targetList = app.lists.byName(LIST_NAME);
     if (!targetList.exists()) {
@@ -52,8 +54,6 @@ function run() {
             targetList.reminders.push(newReminder);
             
             console.log(`追加成功: ${title} (期限: ${dueDate.toLocaleString()})`);
-        } else {
-            console.log(`スキップ: ${title} は既に存在します。`);
         }
     }
 }
