@@ -41,7 +41,7 @@ const tasksToManage = {
 */
 
 function run() {
-    console.log(`起動: ${new Date().toLocaleString()}`);
+    console.log(`Start: ${new Date().toLocaleString()}`);
 
     const stockItems = loadStockItems();
     
@@ -79,7 +79,7 @@ function run() {
             
             targetList.reminders.push(newReminder);
             
-            console.log(`追加成功: ${title} (期限: ${dueDate.toLocaleString()})`);
+            console.log(`Inserted: ${title} (期限: ${dueDate.toLocaleString()})`);
         }
     }
 }
