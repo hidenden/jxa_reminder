@@ -4,12 +4,44 @@
 const app = Application('Reminders');
 app.includeStandardAdditions = true;
 
+const STOCK_LIST_NAME = "ItemStock";
+const DEFAULT_LIST_NAME = "定期的な家事";
+
+function parseBodyConfig(body, itemName) {
+    if (body === null || body === undefined) {
+        console.log(`[ERROR] ${itemName}: コメント(body)が空です。期待フォーマット: 日数[,登録先リマインダー名]`);
+        return null;
+    }
+
+    const bodyText = String(body);
+    const commaIndex = bodyText.indexOf(',');
+
+    let daysText = bodyText;
+    let listNameText = "";
+
+    if (commaIndex >= 0) {
+        daysText = bodyText.slice(0, commaIndex);
+        listNameText = bodyText.slice(commaIndex + 1);
+    }
+
+    const days = parseInt(daysText.trim(), 10);
+    if (Number.isNaN(days)) {
+        console.log(`[ERROR] ${itemName}: 日数の解釈に失敗しました。body="${bodyText}" 期待フォーマット: 日数[,登録先リマインダー名]`);
+        return null;
+    }
+
+    const targetListName = listNameText.trim();
+    return {
+        days,
+        targetListName: targetListName.length > 0 ? targetListName : null
+    };
+}
+
 function loadStockItems() {
-    const STOCK_LIST_NAME = "ItemStock";
     const stockList = app.lists.byName(STOCK_LIST_NAME);
     if (!stockList.exists()) {
         console.log(`リスト "${STOCK_LIST_NAME}" が見つかりません。`);
-        return [];
+        return {};
     }
     // リスト内の全てのリマインダーを取得
     const stockItems = stockList.reminders.where({ completed: false});
@@ -18,16 +50,15 @@ function loadStockItems() {
     // 空の辞書を作成
     const stockDict = {};
     for (let i = 0; i < names.length; i++) {
-        // bodies[i]を数値に変換して保存
-        const days = parseInt(bodies[i], 10);
-        stockDict[names[i]] = days;
+        const parsed = parseBodyConfig(bodies[i], names[i]);
+        if (!parsed) {
+            console.log(`[SKIP] ${names[i]}: コメント(body)の形式が不正のためスキップします。`);
+            continue;
+        }
+        stockDict[names[i]] = parsed;
     }
     return stockDict;
 }
-
-
-// 対象とするリスト名（ユーザーのスクリーンショットに合わせました）
-const LIST_NAME = "定期的な家事";
 
 // 1. データの定義（辞書 / Object）
 /*
@@ -44,18 +75,33 @@ function run() {
     console.log(`Start: ${new Date().toLocaleString()}`);
 
     const stockItems = loadStockItems();
-    
-    // 指定した名前のリストを取得
-    const targetList = app.lists.byName(LIST_NAME);
-    if (!targetList.exists()) {
-        console.log(`リスト "${LIST_NAME}" が見つかりません。`);
-        return;
+
+    const requiredListNames = new Set();
+    for (const itemConfig of Object.values(stockItems)) {
+        requiredListNames.add(itemConfig.targetListName || DEFAULT_LIST_NAME);
+    }
+
+    const listCache = {};
+    for (const listName of requiredListNames) {
+        const list = app.lists.byName(listName);
+        if (!list.exists()) {
+            console.log(`[ERROR] リスト "${listName}" が見つかりません。`);
+            listCache[listName] = null;
+            continue;
+        }
+        listCache[listName] = list;
     }
 
     const now = new Date();
 
     // 2. 各項目のループ処理
-    for (const [title, days] of Object.entries(stockItems)) {
+    for (const [title, config] of Object.entries(stockItems)) {
+        const resolvedListName = config.targetListName || DEFAULT_LIST_NAME;
+        const targetList = listCache[resolvedListName];
+        if (!targetList) {
+            console.log(`[SKIP] ${title}: 登録先リスト "${resolvedListName}" が利用できないためスキップします。`);
+            continue;
+        }
         
         // 3. 既存の項目を検索（フィルタリング）
         // titleが一致し、かつ未完了のものを抽出
@@ -69,7 +115,7 @@ function run() {
             
             // 期限の計算（現在時刻 + N日）
             let dueDate = new Date(now.getTime());
-            dueDate.setDate(dueDate.getDate() + days);
+            dueDate.setDate(dueDate.getDate() + config.days);
 
             // 5. 新規リマインダーのオブジェクト作成とプッシュ
             const newReminder = app.Reminder({
@@ -79,7 +125,7 @@ function run() {
             
             targetList.reminders.push(newReminder);
             
-            console.log(`Inserted: ${title} (期限: ${dueDate.toLocaleString()})`);
+            console.log(`Inserted: ${title} -> ${resolvedListName} (期限: ${dueDate.toLocaleString()})`);
         }
     }
 }
